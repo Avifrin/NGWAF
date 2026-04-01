@@ -1,0 +1,25 @@
+union_select:
+  pattern: "(?i)(?:'|\\b)\\s*union\\s+select\\s+(?:null|[\\w\\*,\\s]+)"
+  tag: "SQLi-Union"
+  severity: 0.95
+  context: "query"
+
+or_1_1:
+  pattern: "(?i)(?:'|\\b)\\s*(or|and)\\s+(?:'?[\\d]+'?\\s*=\\s*'?[\\d]+'?|'[^']+'\\s*=\\s*'[^']+')"
+  tag: "SQLi-Boolean"
+  severity: 0.9
+
+information_schema:
+  pattern: "(?i)\\binformation_schema\\b|\\bschema\\.(tables?|columns?)\\b"
+  tag: "SQLi-Enum"
+  severity: 0.92
+
+benchmark_sleep:
+  pattern: "(?i)(sleep\\s*\\(\\s*\\d+\\s*\\)|benchmark\\s*\\(|waitfor\\s+delay)"
+  tag: "SQLi-Time"
+  severity: 0.88
+
+stacked_queries:
+  pattern: "(?i);\\s*(select|insert|update|delete|drop|alter)\\b"
+  tag: "SQLi-Stacked"
+  severity: 0.93

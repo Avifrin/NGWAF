@@ -1,0 +1,29 @@
+command_injection:
+  pattern: "(?i)(;|\\|\\||&&|`|\\$\\()\\s*([\\w/\\\\.-]+)"
+  tag: "RCE"
+  severity: 0.98
+
+command_keywords:
+  pattern: "(?i)(^|\\s)(cat|ls|whoami|id|ping|netstat|dir|curl|wget|bash|sh)\\b"
+  tag: "RCE-CMD"
+  severity: 0.9
+
+subshell:
+  pattern: "(?i)(\\$\\([^\\)]+\\)|`[^`]+`)"
+  tag: "RCE-Subshell"
+  severity: 0.95
+
+absolute_path_exec:
+  pattern: "(?i)(;|\\|\\||&&)\\s*/[\\w/.-]+"
+  tag: "RCE-Path"
+  severity: 0.92
+
+system_calls:
+  pattern: "(?i)(system\\s*\\(|exec\\s*\\(|passthru\\s*\\(|shell_exec\\s*\\(|proc_open\\s*\\()"
+  tag: "RCE"
+  severity: 0.95
+
+base64_rce:
+  pattern: "(?i)(;|\\|\\||&&)\\s*(echo\\s+[a-zA-Z0-9+/]{16,}={0,2}\\s*\\|\\s*base64\\s*-d)"
+  tag: "RCE-B64"
+  severity: 0.9

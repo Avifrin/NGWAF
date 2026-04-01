@@ -1,0 +1,8 @@
+missing_csrf:
+  pattern: "(POST|PUT|DELETE)\\s+/((admin|api|user|account)/)"
+  tag: "CSRF"
+  severity: 0.7
+suspicious_referer:
+  pattern: "Referer:.*(google|bing|yandex|search)"
+  tag: "CSRF-External"
+  severity: 0.6

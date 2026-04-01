@@ -1,0 +1,290 @@
+<!-- templates/dashboard/request_detail.html -->
+{% extends "base.html" %}
+{% block title %}Запрос #{{ log.id }} - {{ log.client_ip }}{% endblock %}
+{% block page_title %}Запрос #{{ log.id }}{% endblock %}
+{% block subtitle %}{{ log.client_ip }} • {{ log.timestamp.strftime('%d.%m.%Y %H:%M:%S') if log.timestamp else 'N/A' }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Основная информация -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Детали запроса -->
+        <div class="bg-gray-800/50 backdrop-blur-md border-2 border-red-700/30 rounded-2xl p-8">
+            <h3 class="text-xl font-semibold mb-6 flex items-center text-slate-100">
+                <i class="ph ph-file-text mr-3 text-red-400"></i>Детали запроса
+            </h3>
+
+            <div class="space-y-6">
+                <!-- IP и метод -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-3">IP адрес</label>
+                        <div class="flex items-center space-x-3">
+                            <span class="px-6 py-3 bg-gradient-to-r from-red-500/20 to-red-600/20 border-2 border-red-500/40 rounded-xl font-mono font-bold text-red-300 text-lg cursor-pointer hover:bg-red-500/30 transition-all shadow-lg hover:shadow-xl"
+                                  onclick="copyIP('{{ log.client_ip }}')" title="Кликни чтобы скопировать">
+                                {{ log.client_ip }}
+                            </span>
+                            <span class="px-4 py-2 bg-gray-700/50 text-sm font-mono rounded-xl text-slate-300 border border-gray-600">
+                                {{ log.method or 'GET' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Risk Score -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-3">Risk Score</label>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-3 min-w-0 flex-1">
+                                <div class="w-32 bg-gray-700/50 rounded-full h-5 relative overflow-hidden border border-gray-600/50">
+                                    <div class="bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 h-full absolute transition-all duration-700 rounded-full shadow-inner"
+                                         style="width: {{ log.score_percent|default(0) }}%;"></div>
+                                </div>
+                                <span class="font-mono text-2xl font-bold text-slate-100 whitespace-nowrap">{{ "%.2f"|format(log.score|default(0)) }}/10</span>
+                            </div>
+                            <span class="px-4 py-2 bg-gradient-to-r
+                                {% if (log.score|default(0)) > 9 %}from-red-500/30 to-red-600/30 text-red-200 border-red-500/40
+                                {% elif (log.score|default(0)) > 7 %}from-orange-500/30 to-orange-600/30 text-orange-200 border-orange-500/40
+                                {% elif (log.score|default(0)) > 5 %}from-yellow-500/30 to-yellow-600/30 text-yellow-200 border-yellow-500/40
+                                {% else %}from-green-500/30 to-green-600/30 text-green-200 border-green-500/40{% endif %}
+                                text-sm font-semibold rounded-xl border-2 whitespace-nowrap">
+                                {{ '🔥 КРИТИЧНО' if (log.score|default(0)) > 9 else '⚠️ ВЫСОКИЙ' if (log.score|default(0)) > 7 else '🟡 СРЕДНИЙ' if (log.score|default(0)) > 5 else '✅ Низкий' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- URL Path -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-4">URL / Путь</label>
+                    <div class="bg-gray-900/50 border border-gray-700/50 rounded-2xl p-5 font-mono text-sm shadow-inner">
+                        <div class="flex items-start space-x-4">
+                            <span class="px-3 py-2 bg-red-600/20 text-red-300 font-semibold rounded-xl border border-red-600/30 mt-0.5 flex-shrink-0">
+                                {{ log.method or 'GET' }}
+                            </span>
+                            <span class="flex-1 break-all text-slate-200 font-medium">{{ log.path or '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Причина блокировки -->
+                {% if log.reason %}
+                <div class="p-6 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-l-4 border-red-500 rounded-2xl backdrop-blur-sm shadow-xl">
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 bg-red-500/20 rounded-xl border-2 border-red-500/30 flex-shrink-0 mt-0.5">
+                            <i class="ph ph-alert-octagon text-xl text-red-300"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-semibold text-red-300 mb-2">Причина блокировки</h4>
+                            <p class="text-red-200 leading-relaxed">{{ log.reason }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Техническая информация -->
+        <div class="bg-gray-800/50 backdrop-blur-md border-2 border-purple-700/30 rounded-2xl p-8">
+            <h3 class="text-xl font-semibold mb-6 flex items-center text-slate-100">
+                <i class="ph ph-fingerprint mr-3 text-purple-400"></i>Техническая информация
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- User-Agent -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-400 mb-3">User-Agent</label>
+                    <div class="bg-gray-900/50 border border-gray-700 rounded-xl p-4 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-900 font-mono text-sm text-slate-200">
+                        {{ log.headers.get('User-Agent', 'N/A')[:800] }}{% if log.headers.get('User-Agent', '')|length > 800 %}...{% endif %}
+                    </div>
+                </div>
+
+                <!-- Время и размер -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">Время запроса</label>
+                    <p class="bg-gray-900/50 border border-gray-700 rounded-xl p-4 font-mono text-sm text-slate-300">
+                        {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') if log.timestamp else 'N/A' }}
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">Размер Body</label>
+                    <p class="bg-gray-900/50 border border-gray-700 rounded-xl p-4 font-mono text-sm text-slate-300">
+                        {% set size = (log.body|length if log.body else 0)|int %}
+                        {{ (size/1024)|round(1) }} KB{% if size == 0 %} (пусто){% endif %}
+                    </p>
+                </div>
+
+                <!-- Content-Type -->
+                {% if log.headers and log.headers.get('Content-Type') %}
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">Content-Type</label>
+                    <p class="bg-gray-900/50 border border-gray-700 rounded-xl p-4 font-mono text-sm text-slate-300">
+                        {{ log.headers.get('Content-Type')[:100] }}{% if log.headers.get('Content-Type')|length > 100 %}...{% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Body -->
+    {% if log.body and (log.body|length) > 0 %}
+    <div class="bg-gray-800/50 backdrop-blur-md border-2 border-green-700/30 rounded-2xl p-8">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-semibold flex items-center text-slate-100">
+                <i class="ph ph-code mr-3 text-green-400"></i>Request Body / Payload
+            </h3>
+            <span class="px-4 py-2 bg-green-500/20 text-green-300 text-sm font-mono rounded-xl border border-green-500/30">
+                {{ (log.body|length)|int }} символов
+            </span>
+        </div>
+        <div class="bg-gray-900/70 border-2 border-gray-700/50 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="bg-gradient-to-r from-gray-800/50 to-gray-900/50 px-6 py-3 text-xs text-slate-500 font-mono border-b border-gray-700 flex items-center font-medium">
+                <i class="ph ph-file-code mr-3 text-green-400"></i>Raw Payload
+            </div>
+            <div class="max-h-96 overflow-y-auto">
+                <pre class="p-6 text-sm font-mono text-slate-200 leading-relaxed"><code>{{ log.body|replace('<', '&lt;')|replace('>', '&gt;')|e|truncate(8000, true, '') }}</code></pre>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Полные Headers -->
+    {% if log.headers %}
+    <div class="bg-gray-800/50 backdrop-blur-md border-2 border-blue-700/30 rounded-2xl p-8">
+        <h3 class="text-xl font-semibold mb-6 flex items-center text-slate-100">
+            <i class="ph ph-list-bullets mr-3 text-blue-400"></i>Все HTTP Headers
+        </h3>
+        <div class="max-h-96 overflow-y-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for key, value in log.headers.items() %}
+                <div class="group p-4 bg-gray-900/30 hover:bg-gray-800/50 rounded-xl border border-gray-700/50 transition-all hover:border-blue-500/30">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-mono text-blue-400 uppercase tracking-wider font-semibold">{{ key }}</span>
+                        <button onclick="copyText('{{ value }}')" class="p-1 hover:bg-blue-500/20 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                            <i class="ph ph-copy text-xs"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm font-mono text-slate-300 break-words leading-tight max-h-16 overflow-hidden">{{ value[:400] }}{% if value|length > 400 %}...{% endif %}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Related Requests -->
+    {% if related and related|length > 0 %}
+    <div class="bg-gray-800/50 backdrop-blur-md border-2 border-yellow-700/30 rounded-2xl p-8">
+        <h3 class="text-xl font-semibold mb-6 flex items-center text-slate-100">
+            <i class="ph ph-git-network mr-3 text-yellow-400"></i>Связанные запросы от {{ log.client_ip }}
+            <span class="ml-auto text-sm text-slate-400 font-mono">({{ related|length }} за сессию)</span>
+        </h3>
+        <div class="overflow-x-auto rounded-xl border border-gray-700/50">
+            <table class="min-w-full divide-y divide-yellow-700/20">
+                <thead class="bg-gray-900/50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Время</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Path</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Score</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Статус</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider w-32">Действия</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-yellow-700/10">
+                    {% for rel in related %}
+                    <tr class="group hover:bg-yellow-900/20 transition-all h-14">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">
+                            {{ rel.timestamp.strftime('%H:%M:%S') if rel.timestamp else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm max-w-sm">
+                            <span class="truncate block" title="{{ rel.path or '-' }}">{{ (rel.path or '-')[0:45] }}{% if (rel.path or '').__len__() > 45 %}...{% endif %}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 bg-gray-700 text-xs font-mono rounded font-semibold text-slate-300">
+                                {{ "%.1f"|format(rel.score|default(0)) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold
+                            {% if rel.decision == 'block' %}text-red-400
+                            {% elif rel.decision == 'honeypot' %}text-yellow-400
+                            {% else %}text-green-400{% endif %}">
+                            {{ {'block': '🛑 Block', 'honeypot': '🐭 Trap', 'allow': '✅ OK'}.get(rel.decision, '❓ Unknown') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <a href="{{ url_for('dashboard.request_detail', req_id=rel.id) }}"
+                               class="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-xs font-semibold rounded-xl transition-all inline-flex items-center shadow-lg hover:shadow-xl">
+                                <i class="ph ph-eye mr-1"></i>Открыть
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Быстрые действия -->
+    <div class="flex flex-col lg:flex-row gap-4 pt-8 border-t-2 border-red-700/30 bg-gray-900/50 backdrop-blur-md rounded-2xl p-6">
+        <a href="{{ url_for('dashboard.index') }}" class="px-8 py-4 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 rounded-2xl text-center font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
+            <i class="ph ph-arrow-left mr-3 text-xl"></i>
+            <span>← Назад к дашборду</span>
+        </a>
+        <div class="flex flex-1 space-x-3">
+            <button onclick="banIP('{{ log.client_ip }}')"
+                    class="flex-1 px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-2 border-red-700/50 hover:border-red-700 text-white font-semibold rounded-2xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center text-lg">
+                <i class="ph ph-ban mr-2 text-xl"></i>
+                <span>🚫 Заблокировать IP</span>
+            </button>
+            <button onclick="exportJSON()"
+                    class="px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 border-2 border-purple-700/50 hover:border-purple-700 rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
+                <i class="ph ph-download-simple mr-2 text-xl"></i>
+                <span>📥 JSON</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyIP(ip) {
+    navigator.clipboard.writeText(ip).then(() => {
+        const el = event.target;
+        const original = el.innerHTML;
+        el.innerHTML = '<i class="ph ph-check-circle-fill mr-1"></i>✓ Скопировано!';
+        el.classList.add('bg-green-500/30', 'text-green-200');
+        setTimeout(() => {
+            el.innerHTML = original;
+            el.classList.remove('bg-green-500/30', 'text-green-200');
+        }, 2000);
+    });
+}
+
+function banIP(ip) {
+    if (confirm(`🔥 Заблокировать IP ${ip} навсегда?\n\nЭто действие нельзя отменить!`)) {
+        fetch('/admin/ban', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ip: ip})
+        }).then(r => r.json()).then(data => {
+            alert(data.message || 'IP заблокирован');
+        });
+    }
+}
+
+function exportJSON() {
+    const logData = {{ log|tojson|safe }};
+    const filename = "waf-request-{{ log.id }}-{{ log.client_ip|replace('.', '_') }}.json";
+
+    const blob = new Blob([JSON.stringify(logData, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

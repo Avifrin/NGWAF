@@ -1,0 +1,12 @@
+path_traversal:
+  pattern: "\\.\\.(?:/|\\\\)|/%2e%2e/|\\\\.\\."
+  tag: "LFI/RFI"
+  severity: 0.9
+local_files:
+  pattern: "(?i)(/etc/passwd|/proc/version|windows/win.ini|boot.ini)"
+  tag: "LFI"
+  severity: 0.95
+php_wrappers:
+  pattern: "(?i)(expect://|php://filter|zip://|data://)"
+  tag: "RFI"
+  severity: 0.9

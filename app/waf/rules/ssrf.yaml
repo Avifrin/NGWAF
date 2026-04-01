@@ -1,0 +1,8 @@
+#internal_ip:
+#  pattern: "(127\\.0\\.0\\.1|0\\.0\\.0\\.0|10\\.|172\\.(1[6-9]|2[0-9]|3[01])|192\\.168)"
+#  tag: "SSRF"
+#  severity: 0.9
+cloud_metadata:
+  pattern: "(169\\.254\\.169\\.254|metadata\\.google|metadata\\.(aws|azure))"
+  tag: "SSRF-Cloud"
+  severity: 0.95

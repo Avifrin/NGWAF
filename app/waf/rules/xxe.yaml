@@ -1,0 +1,8 @@
+xxe_payload:
+  pattern: "(<!ENTITY|<!DOCTYPE\\s+[^>]*\\s+SYSTEM\\s+['\"]file)"
+  tag: "XXE"
+  severity: 0.98
+entity_expansion:
+  pattern: "<!ENTITY\\s+%\\s*([a-zA-Z0-9]+)\\s+SYSTEM"
+  tag: "XXE-Billion"
+  severity: 0.95
